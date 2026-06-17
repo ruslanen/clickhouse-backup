@@ -124,11 +124,11 @@ func main() {
 		{
 			Name:        "create",
 			Usage:       "Create new backup",
-			UsageText:   "clickhouse-backup create [-t, --tables=<db>.<table>] [--partitions=<partition_names>] [--diff-from-remote=<backup-name>] [-s, --schema] [--rbac] [--configs] [--named-collections] [--skip-check-parts-columns] [--resume] <backup_name>",
+			UsageText:   "clickhouse-backup create [-t, --tables=<db>.<table>] [--partitions=<partition_names>] [--diff-from-remote=<backup-name>] [-s, --schema] [--rbac] [--configs] [--named-collections] [--skip-check-parts-columns] [--skip-hash-of-all-files] [--resume] <backup_name>",
 			Description: "Create new backup",
 			Action: func(c *cli.Context) error {
 				b := backup.NewBackuper(config.GetConfigFromCli(c))
-				return b.CreateBackup(c.Args().First(), c.String("diff-from-remote"), c.String("t"), c.StringSlice("partitions"), c.Bool("s"), c.Bool("rbac"), c.Bool("rbac-only"), c.Bool("configs"), c.Bool("configs-only"), c.Bool("named-collections"), c.Bool("named-collections-only"), c.Bool("skip-check-parts-columns"), c.StringSlice("skip-projections"), c.Bool("resume"), version, c.Int("command-id"))
+				return b.CreateBackup(c.Args().First(), c.String("diff-from-remote"), c.String("t"), c.StringSlice("partitions"), c.Bool("s"), c.Bool("rbac"), c.Bool("rbac-only"), c.Bool("configs"), c.Bool("configs-only"), c.Bool("named-collections"), c.Bool("named-collections-only"), c.Bool("skip-check-parts-columns"), c.Bool("skip-hash-of-all-files"), c.StringSlice("skip-projections"), c.Bool("resume"), version, c.Int("command-id"))
 			},
 			Flags: append(cliapp.Flags,
 				cli.StringFlag{
@@ -192,6 +192,11 @@ func main() {
 					Hidden: false,
 					Usage:  "Skip check system.parts_columns to allow backup inconsistent column types for data parts",
 				},
+				cli.BoolFlag{
+					Name:   "skip-hash-of-all-files",
+					Hidden: false,
+					Usage:  "Skip fetching hash_of_all_files from system.parts; speeds up create ~2x on many tables at the cost of no hash-based integrity check",
+				},
 				cli.StringSliceFlag{
 					Name:   "skip-projections",
 					Hidden: false,
@@ -207,11 +212,11 @@ func main() {
 		{
 			Name:        "create_remote",
 			Usage:       "Create and upload new backup",
-			UsageText:   "clickhouse-backup create_remote [-t, --tables=<db>.<table>] [--partitions=<partition_names>] [--diff-from=<local_backup_name>] [--diff-from-remote=<local_backup_name>] [--schema] [--rbac] [--configs] [--named-collections] [--resumable] [--skip-check-parts-columns] <backup_name>",
+			UsageText:   "clickhouse-backup create_remote [-t, --tables=<db>.<table>] [--partitions=<partition_names>] [--diff-from=<local_backup_name>] [--diff-from-remote=<local_backup_name>] [--schema] [--rbac] [--configs] [--named-collections] [--resumable] [--skip-check-parts-columns] [--skip-hash-of-all-files] <backup_name>",
 			Description: "Create and upload",
 			Action: func(c *cli.Context) error {
 				b := backup.NewBackuper(config.GetConfigFromCli(c))
-				return b.CreateToRemote(c.Args().First(), c.Bool("delete-source"), c.String("diff-from"), c.String("diff-from-remote"), c.String("tables"), c.StringSlice("partitions"), c.StringSlice("skip-projections"), c.Bool("schema"), c.Bool("rbac"), c.Bool("rbac-only"), c.Bool("configs"), c.Bool("configs-only"), c.Bool("named-collections"), c.Bool("named-collections-only"), c.Bool("skip-check-parts-columns"), c.Bool("resume"), version, c.Int("command-id"))
+				return b.CreateToRemote(c.Args().First(), c.Bool("delete-source"), c.String("diff-from"), c.String("diff-from-remote"), c.String("tables"), c.StringSlice("partitions"), c.StringSlice("skip-projections"), c.Bool("schema"), c.Bool("rbac"), c.Bool("rbac-only"), c.Bool("configs"), c.Bool("configs-only"), c.Bool("named-collections"), c.Bool("named-collections-only"), c.Bool("skip-check-parts-columns"), c.Bool("skip-hash-of-all-files"), c.Bool("resume"), version, c.Int("command-id"))
 			},
 			Flags: append(cliapp.Flags,
 				cli.StringFlag{
@@ -284,6 +289,11 @@ func main() {
 					Name:   "skip-check-parts-columns",
 					Hidden: false,
 					Usage:  "Skip check system.parts_columns to allow backup inconsistent column types for data parts",
+				},
+				cli.BoolFlag{
+					Name:   "skip-hash-of-all-files",
+					Hidden: false,
+					Usage:  "Skip fetching hash_of_all_files from system.parts; speeds up create ~2x on many tables at the cost of no hash-based integrity check",
 				},
 				cli.StringSliceFlag{
 					Name:   "skip-projections",
@@ -766,7 +776,7 @@ func main() {
 			Description: "Execute create_remote + delete local, create full backup every `--full-interval`, create and upload incremental backup every `--watch-interval` use previous backup as base with `--diff-from-remote` option, use `backups_to_keep_remote` config option for properly deletion remote backups, will delete old backups which not have references from other backups",
 			Action: func(c *cli.Context) error {
 				b := backup.NewBackuper(config.GetConfigFromCli(c))
-				return b.Watch(c.String("watch-interval"), c.String("full-interval"), c.String("watch-backup-name-template"), c.String("tables"), c.StringSlice("partitions"), c.StringSlice("skip-projections"), c.Bool("schema"), c.Bool("rbac"), c.Bool("configs"), c.Bool("named-collections"), c.Bool("skip-check-parts-columns"), c.Bool("delete-source"), version, c.Int("command-id"), nil, c)
+				return b.Watch(c.String("watch-interval"), c.String("full-interval"), c.String("watch-backup-name-template"), c.String("tables"), c.StringSlice("partitions"), c.StringSlice("skip-projections"), c.Bool("schema"), c.Bool("rbac"), c.Bool("configs"), c.Bool("named-collections"), c.Bool("skip-check-parts-columns"), c.Bool("skip-hash-of-all-files"), c.Bool("delete-source"), version, c.Int("command-id"), nil, c)
 			},
 			Flags: append(cliapp.Flags,
 				cli.StringFlag{
@@ -824,6 +834,11 @@ func main() {
 					Name:   "skip-check-parts-columns",
 					Hidden: false,
 					Usage:  "Skip check system.parts_columns to allow backup inconsistent column types for data parts",
+				},
+				cli.BoolFlag{
+					Name:   "skip-hash-of-all-files",
+					Hidden: false,
+					Usage:  "Skip fetching hash_of_all_files from system.parts; speeds up create ~2x on many tables at the cost of no hash-based integrity check",
 				},
 				cli.StringSliceFlag{
 					Name:   "skip-projections",

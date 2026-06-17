@@ -168,7 +168,7 @@ func (api *APIServer) RunWatch(cliCtx *cli.Context) {
 	log.Info().Msg("Starting API Server in watch mode")
 	b := backup.NewBackuper(api.config)
 	commandId, _ := status.Current.Start("watch")
-	err := b.Watch(cliCtx.String("watch-interval"), cliCtx.String("full-interval"), cliCtx.String("watch-backup-name-template"), "*.*", nil, nil, false, false, false, false, false, cliCtx.Bool("watch-delete-source"), api.clickhouseBackupVersion, commandId, api.GetMetrics(), cliCtx)
+	err := b.Watch(cliCtx.String("watch-interval"), cliCtx.String("full-interval"), cliCtx.String("watch-backup-name-template"), "*.*", nil, nil, false, false, false, false, false, false, cliCtx.Bool("watch-delete-source"), api.clickhouseBackupVersion, commandId, api.GetMetrics(), cliCtx)
 	api.handleWatchResponse(commandId, err)
 }
 
@@ -671,7 +671,7 @@ func (api *APIServer) actionsWatchHandler(w http.ResponseWriter, row status.Acti
 	commandId, _ := status.Current.Start(fullCommand)
 	go func() {
 		b := backup.NewBackuper(cfg)
-		err := b.Watch(watchInterval, fullInterval, watchBackupNameTemplate, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, backupConfigs, backupNamedCollections, skipCheckPartsColumns, deleteSource, api.clickhouseBackupVersion, commandId, api.GetMetrics(), api.cliCtx)
+		err := b.Watch(watchInterval, fullInterval, watchBackupNameTemplate, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, backupConfigs, backupNamedCollections, skipCheckPartsColumns, false, deleteSource, api.clickhouseBackupVersion, commandId, api.GetMetrics(), api.cliCtx)
 		api.handleWatchResponse(commandId, err)
 	}()
 
@@ -1089,7 +1089,7 @@ func (api *APIServer) httpCreateHandler(w http.ResponseWriter, r *http.Request) 
 	go func() {
 		err, _ := api.metrics.ExecuteWithMetrics("create", 0, func() error {
 			b := backup.NewBackuper(cfg)
-			return b.CreateBackup(backupName, diffFromRemote, tablePattern, partitionsToBackup, schemaOnly, createRBAC, rbacOnly, createConfigs, configsOnly, createNamedCollections, namedCollectionsOnly, checkPartsColumns, skipProjections, resume, api.clickhouseBackupVersion, commandId)
+			return b.CreateBackup(backupName, diffFromRemote, tablePattern, partitionsToBackup, schemaOnly, createRBAC, rbacOnly, createConfigs, configsOnly, createNamedCollections, namedCollectionsOnly, checkPartsColumns, false, skipProjections, resume, api.clickhouseBackupVersion, commandId)
 		})
 		if err != nil {
 			log.Error().Msgf("API /backup/create error: %v", err)
@@ -1226,7 +1226,7 @@ func (api *APIServer) httpCreateRemoteHandler(w http.ResponseWriter, r *http.Req
 	go func() {
 		err, _ := api.metrics.ExecuteWithMetrics("create_remote", 0, func() error {
 			b := backup.NewBackuper(cfg)
-			return b.CreateToRemote(backupName, deleteSource, diffFrom, diffFromRemote, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, rbacOnly, backupConfigs, configsOnly, backupNamedCollections, namedCollectionsOnly, skipCheckPartsColumns, resume, api.clickhouseBackupVersion, commandId)
+			return b.CreateToRemote(backupName, deleteSource, diffFrom, diffFromRemote, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, rbacOnly, backupConfigs, configsOnly, backupNamedCollections, namedCollectionsOnly, skipCheckPartsColumns, false, resume, api.clickhouseBackupVersion, commandId)
 		})
 		if err != nil {
 			log.Error().Msgf("API /backup/create_remote error: %v", err)
@@ -1345,7 +1345,7 @@ func (api *APIServer) httpWatchHandler(w http.ResponseWriter, r *http.Request) {
 	commandId, _ := status.Current.Start(fullCommand)
 	go func() {
 		b := backup.NewBackuper(cfg)
-		err := b.Watch(watchInterval, fullInterval, watchBackupNameTemplate, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, backupConfigs, backupNamedCollections, skipCheckPartsColumns, deleteSource, api.clickhouseBackupVersion, commandId, api.GetMetrics(), api.cliCtx)
+		err := b.Watch(watchInterval, fullInterval, watchBackupNameTemplate, tablePattern, partitionsToBackup, skipProjections, schemaOnly, backupRBAC, backupConfigs, backupNamedCollections, skipCheckPartsColumns, false, deleteSource, api.clickhouseBackupVersion, commandId, api.GetMetrics(), api.cliCtx)
 		api.handleWatchResponse(commandId, err)
 	}()
 	api.sendJSONEachRow(w, http.StatusCreated, struct {

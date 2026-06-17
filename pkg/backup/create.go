@@ -59,7 +59,7 @@ func NewBackupName() string {
 
 // CreateBackup - create new backup of all tables matched by tablePattern
 // If backupName is empty string will use default backup name
-func (b *Backuper) CreateBackup(backupName, diffFromRemote, tablePattern string, partitions []string, schemaOnly, createRBAC, rbacOnly, createConfigs, configsOnly, createNamedCollections, namedCollectionsOnly, skipCheckPartsColumns bool, skipProjections []string, resume bool, backupVersion string, commandId int) error {
+func (b *Backuper) CreateBackup(backupName, diffFromRemote, tablePattern string, partitions []string, schemaOnly, createRBAC, rbacOnly, createConfigs, configsOnly, createNamedCollections, namedCollectionsOnly, skipCheckPartsColumns, skipHashOfAllFiles bool, skipProjections []string, resume bool, backupVersion string, commandId int) error {
 	if pidCheckErr := pidlock.CheckAndCreatePidFile(backupName, "create"); pidCheckErr != nil {
 		return pidCheckErr
 	}
@@ -92,6 +92,9 @@ func (b *Backuper) CreateBackup(backupName, diffFromRemote, tablePattern string,
 
 	if skipCheckPartsColumns && b.cfg.ClickHouse.CheckPartsColumns {
 		b.cfg.ClickHouse.CheckPartsColumns = false
+	}
+	if skipHashOfAllFiles {
+		b.cfg.ClickHouse.SkipHashOfAllFiles = true
 	}
 	if b.cfg.General.RBACBackupAlways {
 		createRBAC = true
@@ -991,7 +994,7 @@ func (b *Backuper) AddTableToLocalBackup(ctx context.Context, backupName string,
 			}
 			// If partitionsIdsMap is not empty, only parts in this partition will back up.
 			start := time.Now()
-			useHashOfAllFiles := version >= 19011000
+			useHashOfAllFiles := version >= 19011000 && !b.cfg.ClickHouse.SkipHashOfAllFiles
 			// Old CH still gets the legacy CRC64-of-checksums.txt path. For modern
 			// CH we let MoveShadowToBackup skip CRC64 entirely and pull
 			// hash_of_all_files from system.parts after the shadow tree is walked
